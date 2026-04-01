@@ -10,6 +10,7 @@ import requests
 import urllib3
 import json
 import sys
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -26,8 +27,15 @@ SESSION.headers.update({
 CONFIG_FILE = Path(__file__).parent / "config.json"
 
 def load_config():
+    # GitHub Actions: read from environment variables
+    if os.environ.get("BOT_TOKEN"):
+        return {
+            "bot_token": os.environ["BOT_TOKEN"],
+            "channel_id": os.environ["CHANNEL_ID"],
+        }
+    # Local: read from config.json
     if not CONFIG_FILE.exists():
-        print("ERROR: config.json not found. Please create it from config.template.json")
+        print("ERROR: config.json not found")
         sys.exit(1)
     with open(CONFIG_FILE) as f:
         return json.load(f)
