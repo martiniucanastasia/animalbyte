@@ -5,6 +5,9 @@ on:
     - cron: '0 9 * * *'  # every day at 9:00 AM UTC
   workflow_dispatch:      # allows manual trigger from GitHub UI
 
+permissions:
+  contents: write         # needed to commit posted.json back
+
 jobs:
   post:
     runs-on: ubuntu-latest
@@ -23,3 +26,11 @@ jobs:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
         run: python animal_facts_bot.py
+
+      - name: Save posted history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add posted.json
+          git diff --staged --quiet || git commit -m "chore: update posted animals history [skip ci]"
+          git push
