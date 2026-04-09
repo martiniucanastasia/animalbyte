@@ -2,7 +2,7 @@ name: Daily Animal Fact
 
 on:
   schedule:
-    - cron: '0 9 * * *'  # every day at 9:00 AM UTC
+    - cron: '0 15 * * *'  # every day at 4:00 PM UK time (BST = UTC+1)
   workflow_dispatch:      # allows manual trigger from GitHub UI
 
 permissions:

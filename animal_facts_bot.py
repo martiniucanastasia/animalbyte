@@ -256,9 +256,21 @@ def send_photo(token: str, channel: str, photo_url: str, caption: str) -> bool:
     return r.ok
 
 def send_media_group(token: str, channel: str, images: list, caption: str) -> bool:
+    # Download images locally first — iNaturalist CDN blocks Telegram's fetch
+    files = {}
     media = []
     for i, img_url in enumerate(images):
-        item = {"type": "photo", "media": img_url}
+        key = f"photo{i}"
+        try:
+            img_r = SESSION.get(img_url, timeout=15)
+            img_r.raise_for_status()
+            content_type = img_r.headers.get("Content-Type", "image/jpeg")
+            ext = content_type.split("/")[-1].split(";")[0] or "jpg"
+            files[key] = (f"{key}.{ext}", img_r.content, content_type)
+            item = {"type": "photo", "media": f"attach://{key}"}
+        except Exception as e:
+            print(f"Failed to download image {i} ({img_url}): {e}")
+            item = {"type": "photo", "media": img_url}  # fallback to URL
         if i == 0:
             item["caption"] = caption
             item["parse_mode"] = "Markdown"
@@ -266,7 +278,8 @@ def send_media_group(token: str, channel: str, images: list, caption: str) -> bo
     r = SESSION.post(
         f"https://api.telegram.org/bot{token}/sendMediaGroup",
         data={"chat_id": channel, "media": json.dumps(media)},
-        timeout=30,
+        files=files if files else None,
+        timeout=60,
     )
     if not r.ok:
         print(f"sendMediaGroup error: {r.text}")
